@@ -2,3 +2,4 @@ run_number,start_time,end_time,duration_seconds,avg_cpu_percent,avg_memory_perce
 2,2026-07-25T14:51:21.885188+00:00,2026-07-25T14:52:25.277245+00:00,63.39,22.73,90.87,37.6,245.62,1460.8,6,"Health Score: 86.0, Anomalies: 1","Security Score: 0.0, Threats: 41"
 3,2026-07-25T15:07:23.180318+00:00,2026-07-25T15:09:17.026355+00:00,113.85,18.95,92.15,37.6,255.04,1469.39,4,"Health Score: 86.0, Anomalies: 1","Security Score: 0.0, Threats: 40"
 4,2026-07-25T15:36:38.376524+00:00,2026-07-25T15:37:22.300014+00:00,43.92,18.95,90.35,37.6,270.65,1614.17,4,"Health Score: 86.0, Anomalies: 1","Security Score: 0.0, Threats: 41"
+5,2026-07-25T15:38:35.589454+00:00,2026-07-25T15:42:08.176677+00:00,212.59,19.48,92.15,37.6,271.94,1621.16,8,"Health Score: 86.0, Anomalies: 1","Security Score: 0.0, Threats: 40"
