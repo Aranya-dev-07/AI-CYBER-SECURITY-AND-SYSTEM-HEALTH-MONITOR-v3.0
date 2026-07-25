@@ -52,96 +52,60 @@ logger.setLevel(logging.INFO if config.app_config.LOGGING_ENABLED else logging.C
 
 
 # ========================================================================
-# Cross-platform raw keyboard control (Ctrl+S to start, Ctrl+Q to stop)
+# User input control (S = Start Monitoring, Q = Quit)
 # ========================================================================
 
 
-class KeyboardController:
+class UserInputController:
     """
-    Cross-platform listener for Ctrl+S (start) and Ctrl+Q (stop)
-    keypresses read directly from the terminal, without requiring
-    elevated OS-level hook permissions.
+    Simple, cross-platform user control surface based on standard
+    line input (no raw terminal / OS-level key hooks required):
+
+        S  ->  Start Monitoring
+        Q  ->  Quit
+
+    Before monitoring starts, prompt_start_or_quit() blocks until a
+    valid S/Q choice is entered. Once monitoring is running,
+    start_quit_listener() watches a background thread for a
+    subsequent 'Q' entry to request a graceful stop.
     """
 
-    CTRL_S = "\x13"
-    CTRL_Q = "\x11"
+    VALID_START_CHOICES = ("S", "Q")
 
     def __init__(self) -> None:
-        self._start_event = threading.Event()
         self._stop_event = threading.Event()
-        self._platform = platform.system()
-        self._stop_watcher_thread: Optional[threading.Thread] = None
+        self._listener_thread: Optional[threading.Thread] = None
 
-    def _read_char_windows(self) -> Optional[str]:
-        import msvcrt  # local import: only available on Windows
-
-        if msvcrt.kbhit():
+    def prompt_start_or_quit(self) -> str:
+        """Blocks until the user enters a valid 'S' or 'Q' choice."""
+        while True:
             try:
-                return msvcrt.getwch()
-            except Exception:
-                return None
-        return None
+                choice = input("Select an option -> [S] Start Monitoring   [Q] Quit: ").strip().upper()
+            except EOFError:
+                return "Q"
 
-    def _read_char_unix(self, timeout: float = 0.1) -> Optional[str]:
-        import termios
-        import tty
-        import select
+            if choice in self.VALID_START_CHOICES:
+                return choice
 
-        fd = sys.stdin.fileno()
-        try:
-            old_settings = termios.tcgetattr(fd)
-        except termios.error:
-            time.sleep(timeout)
-            return None
+            print("Invalid option. Please enter 'S' to start monitoring or 'Q' to quit.")
 
-        try:
-            tty.setcbreak(fd)
-            rlist, _, _ = select.select([sys.stdin], [], [], timeout)
-            if rlist:
-                return sys.stdin.read(1)
-            return None
-        except Exception:
-            return None
-        finally:
-            try:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            except Exception:
-                pass
+    def start_quit_listener(self) -> None:
+        """Starts a background thread watching for a 'Q' entry to stop monitoring."""
 
-    def _read_char(self, timeout: float = 0.1) -> Optional[str]:
-        try:
-            if self._platform == "Windows":
-                ch = self._read_char_windows()
-                if ch is None:
-                    time.sleep(timeout)
-                return ch
-            return self._read_char_unix(timeout)
-        except Exception as exc:
-            logger.debug("Keyboard read error (non-fatal): %s", exc)
-            time.sleep(timeout)
-            return None
-
-    def wait_for_start(self) -> None:
-        """Blocks until Ctrl+S is pressed."""
-        logger.info("System ready. Waiting for Ctrl+S to start data collection...")
-        while not self._start_event.is_set():
-            ch = self._read_char()
-            if ch == self.CTRL_S:
-                self._start_event.set()
-                logger.info("Ctrl+S detected. Starting data collection.")
-
-    def start_stop_watcher(self) -> None:
-        """Starts a background thread watching for Ctrl+Q."""
-
-        def _watch() -> None:
+        def _listen() -> None:
             while not self._stop_event.is_set():
-                ch = self._read_char()
-                if ch == self.CTRL_Q:
+                try:
+                    choice = input()
+                except EOFError:
                     self._stop_event.set()
-                    logger.info("Ctrl+Q detected. Stopping data collection.")
+                    return
+                if choice.strip().upper() == "Q":
+                    logger.info("'Q' entered. Stopping data collection.")
+                    self._stop_event.set()
+                    return
 
-        self._stop_watcher_thread = threading.Thread(target=_watch, daemon=True)
-        self._stop_watcher_thread.start()
+        self._listener_thread = threading.Thread(target=_listen, daemon=True)
+        self._listener_thread.start()
 
     def stop_requested(self) -> bool:
         return self._stop_event.is_set()
@@ -198,7 +162,7 @@ class LavenderTrinetraApp:
         self.run_counter = RunCounter(self.paths.data_dir / "run_counter.txt")
         self.run_number = self.run_counter.run_number
 
-        self.keyboard = KeyboardController()
+        self.user_input = UserInputController()
 
         # Engines / monitors (initialized in initialize())
         self.cpu_monitor: Optional[CPUMonitor] = None
@@ -231,24 +195,53 @@ class LavenderTrinetraApp:
     # Startup banner
     # --------------------------------------------------------------
 
+    @staticmethod
+    def _boxed_line(text: str, width: int) -> str:
+        """Formats a single line padded to fit inside the ASCII banner box."""
+        inner_width = width - 4  # account for "║ " + " ║"
+        truncated = text[:inner_width]
+        return f"║ {truncated.ljust(inner_width)} ║"
+
     def print_banner(self) -> None:
         app = config.app_config
         interval = config.monitoring_config.UNIVERSAL_MONITORING_INTERVAL_SECONDS
-        banner = f"""
-{'=' * 72}
-   {app.APP_NAME.upper()}  —  v{app.APP_VERSION}
-{'=' * 72}
- {app.APP_DESCRIPTION}
+        width = 74
+        top = "╔" + "═" * (width - 2) + "╗"
+        divider = "╠" + "═" * (width - 2) + "╣"
+        bottom = "╚" + "═" * (width - 2) + "╝"
 
- Technology Stack : Python {platform.python_version()} | FastAPI | SQLAlchemy
-                     scikit-learn | psutil | Pandas | NumPy
- Monitoring Interval : {interval} second(s)
- Database             : SQLite ({config.database_config.DATABASE_FILENAME})
- API Status            : Starting on {config.api_config.API_HOST}:{config.api_config.API_PORT}
- This is Run {self.run_number}
-{'=' * 72}
-"""
-        print(banner)
+        lines = [
+            top,
+            self._boxed_line("", width),
+            self._boxed_line("∫ Lavender Trinetra", width),
+            self._boxed_line("observe.learn.protect.", width),
+            self._boxed_line("", width),
+            self._boxed_line("AI-Powered Cybersecurity & System Health Monitoring Platform", width),
+            self._boxed_line("", width),
+            divider,
+            self._boxed_line(f"Version           : {app.APP_VERSION}", width),
+            self._boxed_line(
+                f"Backend           : FastAPI ({config.api_config.API_HOST}:{config.api_config.API_PORT})",
+                width,
+            ),
+            self._boxed_line(
+                f"Database          : SQLite ({config.database_config.DATABASE_FILENAME})", width
+            ),
+            self._boxed_line(
+                f"Monitoring Engine : Ready (interval: {interval}s)", width
+            ),
+            self._boxed_line("AI Engine         : Ready", width),
+            self._boxed_line("API Status        : Initializing...", width),
+            bottom,
+        ]
+
+        print("\n" + "\n".join(lines))
+        print(
+            "\n Welcome to Lavender Trinetra — a unified platform that observes system"
+            "\n health, learns behavioral patterns with AI, and protects your machine"
+            "\n through real-time cybersecurity monitoring.\n"
+        )
+        print(f" This is Run #{self.run_number}\n")
         logger.info("Lavender Trinetra v%s starting (Run %d).", app.APP_VERSION, self.run_number)
 
     # --------------------------------------------------------------
@@ -389,6 +382,10 @@ class LavenderTrinetraApp:
         except Exception as exc:
             logger.error("Failed to start FastAPI server: %s", exc)
 
+    @staticmethod
+    def _print_init_step(step_number: int, total_steps: int, label: str) -> None:
+        print(f" [{step_number}/{total_steps}] Initializing {label}...")
+
     def initialize(self) -> None:
         """Runs full application initialization in dependency order."""
         errors = config.validate_configuration()
@@ -396,13 +393,35 @@ class LavenderTrinetraApp:
             for err in errors:
                 logger.warning("Configuration validation warning: %s", err)
 
+        print(" Starting initialization sequence:\n")
+        total_steps = 6
+
+        self._print_init_step(1, total_steps, "Configuration")
         self._init_directories()
         self._init_csv_files()
+        print("       ✓ Configuration loaded and validated.")
+
+        self._print_init_step(2, total_steps, "SQLite Database")
         self._init_database()
-        self._init_api_server()
-        self._init_ai_engine()
-        self._init_cybersecurity_engine()
+        print("       ✓ SQLite database ready.")
+
+        self._print_init_step(3, total_steps, "Monitoring Engine")
         self._init_monitoring_engine()
+        print("       ✓ Monitoring engine ready.")
+
+        self._print_init_step(4, total_steps, "Cybersecurity Engine")
+        self._init_cybersecurity_engine()
+        print("       ✓ Cybersecurity engine ready.")
+
+        self._print_init_step(5, total_steps, "AI Engine")
+        self._init_ai_engine()
+        print("       ✓ AI engine ready.")
+
+        self._print_init_step(6, total_steps, "FastAPI Server")
+        self._init_api_server()
+        print(f"       ✓ FastAPI server running on {config.API_HOST}:{config.API_PORT}.")
+
+        print("\n All subsystems initialized successfully.\n")
         logger.info("All subsystems initialized successfully.")
 
     # --------------------------------------------------------------
@@ -641,13 +660,15 @@ class LavenderTrinetraApp:
         )
 
     def run_monitoring_loop(self) -> None:
-        """Runs the continuous monitoring loop until Ctrl+Q is pressed."""
+        """Runs the continuous monitoring loop until 'Q' is entered."""
         self._start_time = datetime.now(timezone.utc)
         interval = config.monitoring_config.UNIVERSAL_MONITORING_INTERVAL_SECONDS
 
         logger.info("Monitoring loop started (interval: %ss).", interval)
+        print(f" Monitoring started. Data is being stored in CSV and SQLite simultaneously.")
+        print(" Enter 'Q' at any time and press Enter to stop.\n")
 
-        while not self.keyboard.stop_requested():
+        while not self.user_input.stop_requested():
             cycle_start = time.monotonic()
             try:
                 self._monitoring_cycle()
@@ -658,7 +679,7 @@ class LavenderTrinetraApp:
             sleep_time = max(0.0, interval - elapsed)
 
             slept = 0.0
-            while slept < sleep_time and not self.keyboard.stop_requested():
+            while slept < sleep_time and not self.user_input.stop_requested():
                 time.sleep(min(0.2, sleep_time - slept))
                 slept += 0.2
 
@@ -764,9 +785,10 @@ class LavenderTrinetraApp:
     # --------------------------------------------------------------
 
     def shutdown(self) -> None:
-        print("\nUser has stopped data collection")
-        print("Exiting!!")
-        print("Thank You for using The System Health Monitor \U0001F600")
+        print("\nUser has stopped data collection.\n")
+        print("Exiting...\n")
+        print("Thank You for using Lavender Trinetra \U0001F600\n")
+        print("observe.learn.protect.\n")
 
         logger.info("Shutting down all services gracefully...")
 
@@ -786,19 +808,26 @@ class LavenderTrinetraApp:
         self.print_banner()
 
         try:
+            choice = self.user_input.prompt_start_or_quit()
+        except KeyboardInterrupt:
+            logger.info("Startup interrupted by user before a choice was made.")
+            sys.exit(0)
+
+        if choice == "Q":
+            print("\nUser has stopped data collection.\n")
+            print("Exiting...\n")
+            print("Thank You for using Lavender Trinetra \U0001F600\n")
+            print("observe.learn.protect.\n")
+            logger.info("User quit before starting monitoring. No initialization performed.")
+            sys.exit(0)
+
+        try:
             self.initialize()
         except Exception as exc:
             logger.critical("Fatal error during initialization: %s", exc)
             sys.exit(1)
 
-        print("System ready. Press Ctrl+S to start data collection...")
-        try:
-            self.keyboard.wait_for_start()
-        except KeyboardInterrupt:
-            logger.info("Startup interrupted by user before Ctrl+S.")
-            sys.exit(0)
-
-        self.keyboard.start_stop_watcher()
+        self.user_input.start_quit_listener()
 
         try:
             self.run_monitoring_loop()
