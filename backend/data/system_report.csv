@@ -1,1 +1,2 @@
 run_number,start_time,end_time,duration_seconds,avg_cpu_percent,avg_memory_percent,avg_disk_percent,avg_network_sent_mb,avg_network_received_mb,total_alerts,ai_summary,cybersecurity_summary
+2,2026-07-25T14:51:21.885188+00:00,2026-07-25T14:52:25.277245+00:00,63.39,22.73,90.87,37.6,245.62,1460.8,6,"Health Score: 86.0, Anomalies: 1","Security Score: 0.0, Threats: 41"
