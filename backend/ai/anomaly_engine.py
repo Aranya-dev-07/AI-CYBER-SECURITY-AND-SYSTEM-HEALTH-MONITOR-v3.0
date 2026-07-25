@@ -170,7 +170,7 @@ class AnomalyEngine:
         model_dir: Optional[Path] = None,
         history_size: int = 200,
         contamination: float = 0.05,
-        min_training_samples: int = 30,
+        min_training_samples: int = 5,
     ) -> None:
         """
         Args:
