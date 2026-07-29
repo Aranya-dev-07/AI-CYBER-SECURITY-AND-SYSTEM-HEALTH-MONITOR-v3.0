@@ -1,22 +1,27 @@
 /**
  * global.css
  *
- * Global styling for the Lavender Trinetra frontend: reset,
- * typography, scrollbar, body, transitions, and default element
- * styling for a fixed dark theme. Built on top of Tailwind CSS —
- * additions live in @layer base/components so Tailwind utilities
- * always win when used, and nothing here is duplicated as a utility
- * class equivalent.
+ * Global stylesheet for Lavender Trinetra.
  *
- * Fixed color palette (do not introduce other colors):
- *   Background : Dark Slate
- *   Cards      : Slightly lighter Slate
- *   Brand      : Lavender
- *   AI         : Magenta
- *   Healthy    : Olive Green
- *   Critical   : Red
- *   Text       : White
- *   Secondary  : Light Gray
+ * Provides:
+ * • Global reset
+ * • Design tokens
+ * • Typography
+ * • Base element styling
+ * • Scrollbars
+ * • Shared reusable components
+ *
+ * Theme:
+ * • Background  : White
+ * • Surface     : Soft White
+ * • Cards       : White
+ * • Brand       : Lavender
+ * • AI          : Pink
+ * • Monitoring  : Aquamarine
+ * • Healthy     : Seafoam
+ * • Critical    : Red
+ * • Text        : Black
+ * • Secondary   : Grey
  */
 
 @import "tailwindcss";
@@ -26,37 +31,62 @@
    ======================================================================== */
 
 :root {
-  --color-background: #0f172a; /* Dark Slate */
-  --color-card: #1b2536; /* Slightly lighter Slate */
-  --color-card-border: #2a3448;
-  --color-brand: #b497d6; /* Lavender */
-  --color-ai: #d946ef; /* Magenta */
-  --color-healthy: #8a9a5b; /* Olive Green */
-  --color-critical: #ef4444; /* Red */
-  --color-text: #ffffff; /* White */
-  --color-text-secondary: #a1a8b5; /* Light Gray */
 
-  /* RGB channel equivalents of the palette above, used for rgba()-based
-     tints/overlays (e.g. hover states, tinted panel backgrounds) across
-     both global.css and dashboard.css. Precomputed once here instead of
-     recomputed per-use via color-mix(), which is both more broadly
-     browser-compatible and cheaper to paint. */
-  --color-background-rgb: 15, 23, 42;
-  --color-card-rgb: 27, 37, 54;
-  --color-card-border-rgb: 42, 52, 72;
-  --color-brand-rgb: 180, 151, 214;
-  --color-ai-rgb: 217, 70, 239;
-  --color-healthy-rgb: 138, 154, 91;
-  --color-critical-rgb: 239, 68, 68;
-  --color-text-rgb: 255, 255, 255;
-  --color-text-secondary-rgb: 161, 168, 181;
+  /* Background */
 
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --transition-fast: 150ms ease;
-  --transition-base: 200ms ease;
-  --transition-slow: 350ms ease;
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-card: #ffffff;
+  --color-card-hover: #f9fbff;
 
-  color-scheme: dark;
+  /* Borders */
+
+  --color-border: #e5e7eb;
+  --color-border-light: #f1f5f9;
+
+  /* Brand */
+
+  --color-lavender: #b497d6;
+  --color-pink: #f472b6;
+  --color-seafoam: #7dd3c7;
+  --color-aquamarine: #5eead4;
+  --color-red: #ef4444;
+
+  /* Text */
+
+  --color-text: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-light: #9ca3af;
+
+  /* Status */
+
+  --color-success: var(--color-seafoam);
+  --color-warning: #f59e0b;
+  --color-danger: var(--color-red);
+
+  /* Shadows */
+
+  --shadow-sm: 0 2px 6px rgba(15,23,42,.05);
+  --shadow-md: 0 6px 16px rgba(15,23,42,.08);
+  --shadow-lg: 0 14px 32px rgba(15,23,42,.12);
+
+  /* Radius */
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+
+  /* Typography */
+
+  --font-sans: "Inter","Segoe UI",system-ui,sans-serif;
+
+  /* Transitions */
+
+  --transition-fast: .15s ease;
+  --transition-base: .25s ease;
+  --transition-slow: .4s ease;
+
+  color-scheme: light;
 }
 
 /* ========================================================================
@@ -70,7 +100,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    border-color: var(--color-card-border);
+    border-color: var(--color-border);
   }
 
   html {
@@ -106,6 +136,7 @@
 @layer base {
   html {
     font-family: var(--font-sans);
+    background: var(--color-background);
     font-size: 16px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -147,10 +178,17 @@
 @layer base {
   body {
     min-height: 100vh;
-    background-color: var(--color-background);
+    background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #f8fafc 100%
+    );
+    line-height: 1.6;
     color: var(--color-text);
     font-family: var(--font-sans);
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   #root {
@@ -182,17 +220,17 @@
 
 @layer base {
   a {
-    color: var(--color-brand);
+    color: var(--color-lavender);
     text-decoration: none;
     cursor: pointer;
   }
 
   a:hover {
-    color: var(--color-text);
+    color: var(--color-pink);
   }
 
   a:focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-lavender);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -210,6 +248,12 @@
     border: none;
     cursor: pointer;
     appearance: none;
+    border-radius: var(--radius-md);
+    transition: var(--transition-base);
+  }
+
+  button:hover {
+    transform: translateY(-2px);
   }
 
   button:disabled {
@@ -218,7 +262,7 @@
   }
 
   button:focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-lavender);
     outline-offset: 2px;
   }
 }
@@ -234,8 +278,8 @@
     font-family: inherit;
     font-size: inherit;
     color: var(--color-text);
-    background-color: transparent;
-    border: 1px solid var(--color-card-border);
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
     border-radius: 0.5rem;
     outline: none;
   }
@@ -249,8 +293,8 @@
   input:focus,
   textarea:focus,
   select:focus {
-    border-color: var(--color-brand);
-    box-shadow: 0 0 0 1px var(--color-brand);
+    border-color: var(--color-lavender);
+    box-shadow: 0 0 0 3px rgba(180,151,214,.18);
   }
 
   input[type="number"]::-webkit-inner-spin-button,
@@ -259,7 +303,7 @@
   }
 
   select {
-    color-scheme: dark;
+    color-scheme: light;
   }
 }
 
@@ -270,7 +314,7 @@
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-card-border) transparent;
+    scrollbar-color: #cbd5e1 transparent;
   }
 
   *::-webkit-scrollbar {
@@ -283,12 +327,12 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: var(--color-card-border);
+    background: #cbd5e1;
     border-radius: 9999px;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-brand);
+    background: var(--color-lavender);
   }
 }
 
@@ -298,8 +342,8 @@
 
 @layer base {
   ::selection {
-    background-color: var(--color-brand);
-    color: var(--color-background);
+    background: var(--color-lavender);
+    color: #ffffff;
   }
 }
 
@@ -340,23 +384,21 @@
 
 /* ========================================================================
    Reusable component-level primitives
-   (kept minimal and generic so Tailwind utilities remain the primary
-   styling mechanism throughout the app)
-
-   NOTE: `.surface-card` is the single base "card box" primitive shared
-   across the app (background, border, radius). dashboard.css builds on
-   top of it rather than restating these three properties — e.g.
-   `.dashboard-card` is meant to be combined as
-   className="surface-card dashboard-card" wherever a plain card with
-   shadow/hover behavior is needed, instead of duplicating the box
-   styling for every card-like class.
    ======================================================================== */
 
 @layer components {
   .surface-card {
-    background-color: var(--color-card);
-    border: 1px solid var(--color-card-border);
-    border-radius: 0.75rem;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+    overflow:hidden;
+  }
+
+  .surface-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
   }
 
   .text-secondary {
@@ -365,6 +407,57 @@
 
   .animate-fade-in {
     animation: fade-in var(--transition-slow) ease both;
+  }
+
+  .dashboard-card {
+    background:var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 1.4rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .container {
+    width: min(1440px, 94%);
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  .section-title {
+    color: var(--color-text);
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .section-subtitle {
+    color: var(--color-text-secondary);
+    font-size: .9rem;
+  }
+
+  .status-success {
+    color: var(--color-seafoam);
+  }
+
+  .status-warning {
+    color: var(--color-warning);
+  }
+
+  .status-danger {
+    color: var(--color-red);
+  }
+
+  .status-ai {
+    color: var(--color-pink);
+  }
+
+  .status-monitor {
+    color: var(--color-aquamarine);
   }
 }
 
