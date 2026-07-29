@@ -106,7 +106,7 @@ class MonitoringConfig:
     application (CPU, memory, disk, network, cybersecurity scans).
     """
 
-    UNIVERSAL_MONITORING_INTERVAL_SECONDS: int = 10
+    UNIVERSAL_MONITORING_INTERVAL_SECONDS: int = 5
 
     # Derived/alias intervals — all default to the universal interval
     # so every subsystem stays in sync unless explicitly overridden.
@@ -235,7 +235,7 @@ class AIConfig:
     PREDICTION_WINDOW_SIZE: int = 10  # number of future readings to project
     TREND_WINDOW_SIZE: int = 200  # number of historical readings retained for trend analysis
 
-    MIN_TRAINING_SAMPLES: int = 30
+    MIN_TRAINING_SAMPLES: int = 5
     ANOMALY_CONTAMINATION: float = 0.05
 
     HEALTH_SCORE_MIN: float = 0.0

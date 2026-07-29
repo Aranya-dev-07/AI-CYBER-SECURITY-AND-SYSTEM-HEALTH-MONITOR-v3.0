@@ -1,25 +1,22 @@
 /**
  * global.css
  *
- * Global stylesheet for Lavender Trinetra.
+ * Global styling for the Lavender Trinetra frontend: reset,
+ * typography, scrollbar, body, transitions, and default element
+ * styling for a fixed dark theme. Built on top of Tailwind CSS —
+ * additions live in @layer base/components so Tailwind utilities
+ * always win when used, and nothing here is duplicated as a utility
+ * class equivalent.
  *
- * Provides:
- * • Global reset
- * • Typography
- * • Design tokens
- * • Scrollbars
- * • Base element styling
- * • Shared reusable components
- *
- * Theme:
- * White Background
- * Lavender Branding
- * Pink AI
- * Seafoam Health
- * Aquamarine Monitoring
- * Red Critical Alerts
- * Black Text
- * Grey Secondary Text
+ * Fixed color palette (do not introduce other colors):
+ *   Background : Dark Slate
+ *   Cards      : Slightly lighter Slate
+ *   Brand      : Lavender
+ *   AI         : Magenta
+ *   Healthy    : Olive Green
+ *   Critical   : Red
+ *   Text       : White
+ *   Secondary  : Light Gray
  */
 
 @import "tailwindcss";
@@ -29,57 +26,38 @@
    ======================================================================== */
 
 :root {
-  /* ===========================
-     Lavender Trinetra v1 Theme
-     =========================== */
+  --color-background: #0f172a; /* Dark Slate */
+  --color-card: #1b2536; /* Slightly lighter Slate */
+  --color-card-border: #2a3448;
+  --color-brand: #b497d6; /* Lavender */
+  --color-ai: #d946ef; /* Magenta */
+  --color-healthy: #8a9a5b; /* Olive Green */
+  --color-critical: #ef4444; /* Red */
+  --color-text: #ffffff; /* White */
+  --color-text-secondary: #a1a8b5; /* Light Gray */
 
-  /* Backgrounds */
-  --color-background: #ffffff;
-  --color-surface: #f8fafc;
-  --color-card: #ffffff;
-  --color-card-hover: #f9fbff;
+  /* RGB channel equivalents of the palette above, used for rgba()-based
+     tints/overlays (e.g. hover states, tinted panel backgrounds) across
+     both global.css and dashboard.css. Precomputed once here instead of
+     recomputed per-use via color-mix(), which is both more broadly
+     browser-compatible and cheaper to paint. */
+  --color-background-rgb: 15, 23, 42;
+  --color-card-rgb: 27, 37, 54;
+  --color-card-border-rgb: 42, 52, 72;
+  --color-brand-rgb: 180, 151, 214;
+  --color-ai-rgb: 217, 70, 239;
+  --color-healthy-rgb: 138, 154, 91;
+  --color-critical-rgb: 239, 68, 68;
+  --color-text-rgb: 255, 255, 255;
+  --color-text-secondary-rgb: 161, 168, 181;
 
-  /* Borders */
-  --color-border: #e5e7eb;
-  --color-border-light: #f1f5f9;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
 
-  /* Brand Colors */
-  --color-lavender: #b497d6;
-  --color-pink: #f472b6;
-  --color-seafoam: #7dd3c7;
-  --color-aquamarine: #5eead4;
-  --color-red: #ef4444;
-
-  /* Text */
-  --color-text: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-light: #9ca3af;
-
-  /* Status */
-  --color-success: var(--color-seafoam);
-  --color-warning: #f59e0b;
-  --color-danger: var(--color-red);
-
-  /* Shadows */
-  --shadow-sm: 0 2px 6px rgba(15,23,42,.05);
-  --shadow-md: 0 6px 16px rgba(15,23,42,.08);
-  --shadow-lg: 0 14px 32px rgba(15,23,42,.12);
-
-  /* Radius */
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
-
-  /* Typography */
-  --font-sans: "Inter","Segoe UI",sans-serif;
-
-  /* Transitions */
-  --transition-fast: .15s ease;
-  --transition-base: .25s ease;
-  --transition-slow: .4s ease;
-
-  color-scheme: light;
-} 
+  color-scheme: dark;
+}
 
 /* ========================================================================
    Reset
@@ -168,16 +146,12 @@
 
 @layer base {
   body {
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-sans);
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  color: var(--color-text);
-  line-height: 1.6;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
 
   #root {
     min-height: 100vh;
@@ -208,14 +182,14 @@
 
 @layer base {
   a {
-    color: var(--color-lavender);
+    color: var(--color-brand);
     text-decoration: none;
-    transition: var(--transition-base);
-}
+    cursor: pointer;
+  }
 
-a:hover {
-    color: var(--color-pink);
-}
+  a:hover {
+    color: var(--color-text);
+  }
 
   a:focus-visible {
     outline: 2px solid var(--color-brand);
@@ -230,17 +204,13 @@ a:hover {
 
 @layer base {
   button {
-    cursor: pointer;
-    border: none;
-    outline: none;
-    border-radius: var(--radius-md);
-    transition: var(--transition-base);
     font-family: inherit;
-}
-
-  button:hover {
-    transform: translateY(-2px);
-}
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    appearance: none;
+  }
 
   button:disabled {
     cursor: not-allowed;
@@ -261,13 +231,14 @@ a:hover {
   input,
   textarea,
   select {
-    background: #ffffff;
+    font-family: inherit;
+    font-size: inherit;
     color: var(--color-text);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: .75rem 1rem;
-    transition: var(--transition-base);
-}
+    background-color: transparent;
+    border: 1px solid var(--color-card-border);
+    border-radius: 0.5rem;
+    outline: none;
+  }
 
   input::placeholder,
   textarea::placeholder {
@@ -278,10 +249,9 @@ a:hover {
   input:focus,
   textarea:focus,
   select:focus {
-    border-color: var(--color-lavender);
-    box-shadow: 0 0 0 3px rgba(180,151,214,.18);
-    outline: none;
-}
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 1px var(--color-brand);
+  }
 
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
@@ -303,22 +273,23 @@ a:hover {
     scrollbar-color: var(--color-card-border) transparent;
   }
 
-  ::-webkit-scrollbar {
-    width: 10px;
-}
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
-}
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 20px;
-}
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-card-border);
+    border-radius: 9999px;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-    background: var(--color-lavender);
-}
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-brand);
+  }
 }
 
 /* ========================================================================
@@ -327,9 +298,9 @@ a:hover {
 
 @layer base {
   ::selection {
-    background: var(--color-lavender);
-    color: white;
-}
+    background-color: var(--color-brand);
+    color: var(--color-background);
+  }
 }
 
 /* ========================================================================
@@ -351,24 +322,43 @@ a:hover {
 }
 
 /* ========================================================================
+   Reduced motion (performance + accessibility)
+   ======================================================================== */
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ========================================================================
    Reusable component-level primitives
    (kept minimal and generic so Tailwind utilities remain the primary
    styling mechanism throughout the app)
+
+   NOTE: `.surface-card` is the single base "card box" primitive shared
+   across the app (background, border, radius). dashboard.css builds on
+   top of it rather than restating these three properties — e.g.
+   `.dashboard-card` is meant to be combined as
+   className="surface-card dashboard-card" wherever a plain card with
+   shadow/hover behavior is needed, instead of duplicating the box
+   styling for every card-like class.
    ======================================================================== */
 
 @layer components {
   .surface-card {
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition-base);
-}
+    background-color: var(--color-card);
+    border: 1px solid var(--color-card-border);
+    border-radius: 0.75rem;
+  }
 
-.surface-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
-}
   .text-secondary {
     color: var(--color-text-secondary);
   }
@@ -376,11 +366,6 @@ a:hover {
   .animate-fade-in {
     animation: fade-in var(--transition-slow) ease both;
   }
-}
-
-.container {
-    width: min(1400px, 95%);
-    margin-inline: auto;
 }
 
 @keyframes fade-in {
