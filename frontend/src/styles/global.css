@@ -1,0 +1,395 @@
+/**
+ * global.css
+ *
+ * Global stylesheet for Lavender Trinetra.
+ *
+ * Provides:
+ * • Global reset
+ * • Typography
+ * • Design tokens
+ * • Scrollbars
+ * • Base element styling
+ * • Shared reusable components
+ *
+ * Theme:
+ * White Background
+ * Lavender Branding
+ * Pink AI
+ * Seafoam Health
+ * Aquamarine Monitoring
+ * Red Critical Alerts
+ * Black Text
+ * Grey Secondary Text
+ */
+
+@import "tailwindcss";
+
+/* ========================================================================
+   Design tokens
+   ======================================================================== */
+
+:root {
+  /* ===========================
+     Lavender Trinetra v1 Theme
+     =========================== */
+
+  /* Backgrounds */
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-card: #ffffff;
+  --color-card-hover: #f9fbff;
+
+  /* Borders */
+  --color-border: #e5e7eb;
+  --color-border-light: #f1f5f9;
+
+  /* Brand Colors */
+  --color-lavender: #b497d6;
+  --color-pink: #f472b6;
+  --color-seafoam: #7dd3c7;
+  --color-aquamarine: #5eead4;
+  --color-red: #ef4444;
+
+  /* Text */
+  --color-text: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-light: #9ca3af;
+
+  /* Status */
+  --color-success: var(--color-seafoam);
+  --color-warning: #f59e0b;
+  --color-danger: var(--color-red);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 6px rgba(15,23,42,.05);
+  --shadow-md: 0 6px 16px rgba(15,23,42,.08);
+  --shadow-lg: 0 14px 32px rgba(15,23,42,.12);
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+
+  /* Typography */
+  --font-sans: "Inter","Segoe UI",sans-serif;
+
+  /* Transitions */
+  --transition-fast: .15s ease;
+  --transition-base: .25s ease;
+  --transition-slow: .4s ease;
+
+  color-scheme: light;
+} 
+
+/* ========================================================================
+   Reset
+   ======================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-color: var(--color-card-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  img,
+  picture,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+}
+
+/* ========================================================================
+   Typography
+   ======================================================================== */
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.25;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  small {
+    font-size: 0.8125rem;
+  }
+
+  code,
+  pre {
+    font-family: "Fira Code", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+}
+
+/* ========================================================================
+   Body
+   ======================================================================== */
+
+@layer base {
+  body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+  #root {
+    min-height: 100vh;
+    isolation: isolate;
+  }
+}
+
+/* ========================================================================
+   Default transitions
+   ======================================================================== */
+
+@layer base {
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary {
+    transition: color var(--transition-base), background-color var(--transition-base),
+      border-color var(--transition-base), opacity var(--transition-base),
+      box-shadow var(--transition-base), transform var(--transition-fast);
+  }
+}
+
+/* ========================================================================
+   Links
+   ======================================================================== */
+
+@layer base {
+  a {
+    color: var(--color-lavender);
+    text-decoration: none;
+    transition: var(--transition-base);
+}
+
+a:hover {
+    color: var(--color-pink);
+}
+
+  a:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* ========================================================================
+   Buttons
+   ======================================================================== */
+
+@layer base {
+  button {
+    cursor: pointer;
+    border: none;
+    outline: none;
+    border-radius: var(--radius-md);
+    transition: var(--transition-base);
+    font-family: inherit;
+}
+
+  button:hover {
+    transform: translateY(-2px);
+}
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* ========================================================================
+   Inputs
+   ======================================================================== */
+
+@layer base {
+  input,
+  textarea,
+  select {
+    background: #ffffff;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: .75rem 1rem;
+    transition: var(--transition-base);
+}
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--color-lavender);
+    box-shadow: 0 0 0 3px rgba(180,151,214,.18);
+    outline: none;
+}
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
+  select {
+    color-scheme: dark;
+  }
+}
+
+/* ========================================================================
+   Scrollbar styling (WebKit + Firefox)
+   ======================================================================== */
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-card-border) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-lavender);
+}
+}
+
+/* ========================================================================
+   Selection
+   ======================================================================== */
+
+@layer base {
+  ::selection {
+    background: var(--color-lavender);
+    color: white;
+}
+}
+
+/* ========================================================================
+   Responsive defaults
+   ======================================================================== */
+
+@layer base {
+  @media (max-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    html {
+      font-size: 16.5px;
+    }
+  }
+}
+
+/* ========================================================================
+   Reusable component-level primitives
+   (kept minimal and generic so Tailwind utilities remain the primary
+   styling mechanism throughout the app)
+   ======================================================================== */
+
+@layer components {
+  .surface-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+}
+
+.surface-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+
+  .animate-fade-in {
+    animation: fade-in var(--transition-slow) ease both;
+  }
+}
+
+.container {
+    width: min(1400px, 95%);
+    margin-inline: auto;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
