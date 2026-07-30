@@ -2,17 +2,21 @@
  * firewallmonitor.jsx
  *
  * Displays firewall and network protection status: Firewall Status,
- * Open Ports, Network Rules and Security Configuration. Primary data
- * comes from SystemStatusContext; a supplementary live security score
- * is fetched directly via api.jsx (securityApi.getScore()) on mount
- * and on manual refresh, without duplicating the context's own
- * snapshot fetch.
+ * Open Ports, Network Rules and Security Configuration. All data
+ * (including the security score) comes exclusively from
+ * SystemStatusContext's `cybersecurityStatus` — this component makes
+ * no direct api.jsx calls of its own. "Refresh" simply invokes the
+ * context's existing `refreshCybersecurityStatus` action, which is
+ * the single place api.jsx is called for this data.
+ *
+ * Compatible with App.jsx / React Router: exposes id="firewall-monitor"
+ * so it can be deep-linked/scrolled to from other pages (e.g.
+ * securityoverview.jsx, pages/cybersecurity.jsx) via useNavigate.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import { FiShield, FiWifi, FiLock, FiAlertTriangle, FiRefreshCw, FiSettings } from "react-icons/fi";
 
-import { securityApi } from "../api/api.jsx";
 import { COLORS, StatusBadge, AlertBadge } from "../components/dashboardcomponents.jsx";
 import { SectionHeader, EmptyState, LoadingSpinner } from "../components/dashboardwidgets.jsx";
 import { useSystemStatus } from "../context/systemstatuscontext.jsx";
@@ -30,33 +34,10 @@ export default function FirewallMonitor({ data, loading }) {
 
   const cybersecurityStatus = data ?? context.cybersecurityStatus;
   const isLoading = loading ?? (Boolean(context.loading?.security) && !context.cybersecurityStatus);
+  const isRefreshing = Boolean(context.loading?.security);
 
-  const [liveScore, setLiveScore] = useState(null);
-  const [scoreError, setScoreError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchLiveScore = useCallback(async () => {
-    try {
-      const result = await securityApi.getScore();
-      setLiveScore(result?.security_score ?? null);
-      setScoreError(null);
-    } catch (err) {
-      setScoreError(err?.message || "Failed to fetch live security score.");
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchLiveScore();
-  }, [fetchLiveScore]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([context.refreshCybersecurityStatus?.(), fetchLiveScore()]);
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  const securityScore =
+    cybersecurityStatus?.security_score ?? cybersecurityStatus?.summary?.security_score ?? null;
 
   const firewall = cybersecurityStatus?.firewall ?? {};
   const network = cybersecurityStatus?.network ?? {};
@@ -73,7 +54,8 @@ export default function FirewallMonitor({ data, loading }) {
 
   return (
     <div
-      className="rounded-xl border p-4 sm:p-5 flex flex-col gap-5"
+      id="firewall-monitor"
+      className="rounded-xl border p-4 sm:p-5 flex flex-col gap-5 scroll-mt-24"
       style={{ backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }}
     >
       <SectionHeader
@@ -88,11 +70,11 @@ export default function FirewallMonitor({ data, loading }) {
             />
             <button
               type="button"
-              onClick={handleRefresh}
+              onClick={() => context.refreshCybersecurityStatus?.()}
               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
               style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
             >
-              <FiRefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              <FiRefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
             </button>
           </div>
@@ -103,23 +85,18 @@ export default function FirewallMonitor({ data, loading }) {
         <LoadingSpinner label="Loading firewall status..." />
       ) : (
         <>
-          {liveScore !== null && (
+          {securityScore !== null && (
             <div
               className="flex items-center justify-between rounded-lg border p-3"
               style={{ backgroundColor: COLORS.background, borderColor: COLORS.cardBorder }}
             >
               <span className="text-xs" style={{ color: COLORS.secondary }}>
-                Live Security Score
+                Security Score
               </span>
               <span className="text-sm font-semibold" style={{ color: COLORS.text }}>
-                {liveScore}%
+                {securityScore}%
               </span>
             </div>
-          )}
-          {scoreError && (
-            <p className="text-xs" style={{ color: COLORS.critical }}>
-              {scoreError}
-            </p>
           )}
 
           {/* Firewall Status */}

@@ -3,13 +3,27 @@
  *
  * Main cybersecurity dashboard overview: Security Score, Threat
  * Status, System Protection Status, Active Security Events and a
- * Security Summary. Data comes from SystemStatusContext, which is
- * itself the only layer that communicates with api.jsx — this
- * component makes no direct API calls of its own.
+ * Security Summary. Data comes exclusively from SystemStatusContext
+ * — this component makes no direct api.jsx calls of its own.
+ *
+ * Compatible with App.jsx / React Router: exposes id="security-overview"
+ * and links to the other cybersecurity sections
+ * (firewall-monitor / threat-center / security-reports), all assumed
+ * to be composed together under pages/cybersecurity.jsx.
  */
 
 import React from "react";
-import { FiShield, FiAlertTriangle, FiActivity, FiLock, FiTrendingUp, FiTrendingDown, FiMinus } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import {
+  FiShield,
+  FiAlertTriangle,
+  FiActivity,
+  FiLock,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiMinus,
+  FiFileText,
+} from "react-icons/fi";
 
 import { COLORS, StatusBadge, ProgressRing } from "../components/dashboardcomponents.jsx";
 import { SectionHeader, EmptyState, LoadingSpinner } from "../components/dashboardwidgets.jsx";
@@ -44,6 +58,7 @@ function trendColor(trend) {
 
 export default function SecurityOverview({ data, loading }) {
   const context = useSystemStatus();
+  const navigate = useNavigate();
 
   const cybersecurityStatus = data ?? context.cybersecurityStatus;
   const isLoading = loading ?? (Boolean(context.loading?.security) && !context.cybersecurityStatus);
@@ -64,16 +79,45 @@ export default function SecurityOverview({ data, loading }) {
   const TrendIcon = trendIcon(trend);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div id="security-overview" className="flex flex-col gap-5 scroll-mt-24">
       <SectionHeader
         title="Security Overview"
         subtitle="Real-time cybersecurity posture, threats and protection status."
         icon={FiShield}
         actions={
-          <StatusBadge
-            status={securityEngineOnline ? "healthy" : "critical"}
-            label={securityEngineOnline ? "Security Engine Online" : "Security Engine Offline"}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge
+              status={securityEngineOnline ? "healthy" : "critical"}
+              label={securityEngineOnline ? "Security Engine Online" : "Security Engine Offline"}
+            />
+            <button
+              type="button"
+              onClick={() => navigate("/cybersecurity#firewall-monitor")}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
+              style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
+            >
+              <FiLock className="h-3.5 w-3.5" />
+              Firewall
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/cybersecurity#threat-center")}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
+              style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
+            >
+              <FiAlertTriangle className="h-3.5 w-3.5" />
+              Threats
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/cybersecurity#security-reports")}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
+              style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
+            >
+              <FiFileText className="h-3.5 w-3.5" />
+              Reports
+            </button>
+          </div>
         }
       />
 
@@ -104,8 +148,10 @@ export default function SecurityOverview({ data, loading }) {
               </div>
             </div>
 
-            <div
-              className="flex flex-col gap-2 rounded-xl border p-4"
+            <button
+              type="button"
+              onClick={() => navigate("/cybersecurity#threat-center")}
+              className="flex flex-col gap-2 rounded-xl border p-4 text-left"
               style={{ backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }}
             >
               <div className="flex items-center gap-2">
@@ -118,10 +164,12 @@ export default function SecurityOverview({ data, loading }) {
               <p className="text-xs" style={{ color: COLORS.secondary }}>
                 {threatCount} active threat{threatCount === 1 ? "" : "s"} detected
               </p>
-            </div>
+            </button>
 
-            <div
-              className="flex flex-col gap-2 rounded-xl border p-4"
+            <button
+              type="button"
+              onClick={() => navigate("/cybersecurity#firewall-monitor")}
+              className="flex flex-col gap-2 rounded-xl border p-4 text-left"
               style={{ backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }}
             >
               <div className="flex items-center gap-2">
@@ -143,7 +191,7 @@ export default function SecurityOverview({ data, loading }) {
               <p className="text-xs" style={{ color: COLORS.secondary }}>
                 {securityEngineOnline ? "Security engine actively monitoring." : "Security engine unavailable."}
               </p>
-            </div>
+            </button>
           </div>
 
           {/* Active Security Events */}

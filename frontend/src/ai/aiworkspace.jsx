@@ -10,8 +10,9 @@
  */
 
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { FaBrain } from "react-icons/fa6";
-import { FiActivity, FiRefreshCw } from "react-icons/fi";
+import { FiActivity, FiRefreshCw, FiShield } from "react-icons/fi";
 
 import { COLORS, ProgressRing } from "../components/dashboardcomponents.jsx";
 import { SectionHeader } from "../components/dashboardwidgets.jsx";
@@ -30,6 +31,7 @@ function metricStatus(deficit, warnAt = 25, criticalAt = 40) {
 
 export default function AIWorkspace({ data, loading, onRefresh }) {
   const context = useSystemStatus();
+  const navigate = useNavigate();
 
   // Prefer explicitly supplied props (controlled usage from a parent
   // page); otherwise fall back to SystemStatusContext directly.
@@ -43,7 +45,7 @@ export default function AIWorkspace({ data, loading, onRefresh }) {
   const predictionCount = aiStatus?.predictive_alerts?.length ?? 0;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div id="ai-workspace" className="flex flex-col gap-5 scroll-mt-24">
       <div
         className="rounded-xl border p-4 sm:p-5"
         style={{ backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }}
@@ -53,15 +55,26 @@ export default function AIWorkspace({ data, loading, onRefresh }) {
           subtitle="Unified view of system health scoring, insights, predictions and recommendations."
           icon={FaBrain}
           actions={
-            <button
-              type="button"
-              onClick={() => handleRefresh?.()}
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
-              style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
-            >
-              <FiRefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/cybersecurity")}
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
+                style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
+              >
+                <FiShield className="h-3.5 w-3.5" />
+                View Cybersecurity
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRefresh?.()}
+                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-200 hover:bg-white/5"
+                style={{ borderColor: COLORS.cardBorder, color: COLORS.text }}
+              >
+                <FiRefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
           }
         />
 

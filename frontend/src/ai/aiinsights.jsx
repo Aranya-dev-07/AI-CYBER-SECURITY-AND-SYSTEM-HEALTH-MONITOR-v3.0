@@ -99,7 +99,8 @@ export default function AIInsights({ data, loading }) {
 
   return (
     <div
-      className="rounded-xl border p-4 sm:p-5 flex flex-col gap-5"
+      id="ai-insights"
+      className="rounded-xl border p-4 sm:p-5 flex flex-col gap-5 scroll-mt-24"
       style={{ backgroundColor: COLORS.card, borderColor: COLORS.cardBorder }}
     >
       <SectionHeader
