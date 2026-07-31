@@ -16,10 +16,10 @@ import axios from "axios";
 // ========================================================================
 
 /** @type {string} Base URL of the Lavender Trinetra FastAPI backend. */
-export const API_BASE_URL = "http://localhost:8002";
+export const API_BASE_URL = "/api";
 
 /** @type {number} Default request timeout, in milliseconds. */
-const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_TIMEOUT_MS = 60000;
 
 // ========================================================================
 // Axios instance

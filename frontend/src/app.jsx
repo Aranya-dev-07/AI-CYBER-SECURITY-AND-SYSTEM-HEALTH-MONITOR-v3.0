@@ -1,33 +1,33 @@
 /**
  * App.jsx
  *
- * Frontend orchestrator for the Lavender Trinetra dashboard. Wires
- * together React Router, AppShell, and SystemStatusContext (the only
- * data layer, itself backed by api.jsx) into a single application:
+ * Frontend orchestrator for the Lavender Trinetra dashboard.
  *
- *   - SystemStatusProvider owns all communication with the FastAPI
- *     backend (http://localhost:8002) and auto-refreshes on an
- *     interval. App.jsx does not call api.jsx directly — all shared
- *     state flows through the context only.
- *   - A lightweight loading screen is shown until the first backend
- *     status check completes.
- *   - A graceful "backend unavailable" screen is shown if the API is
- *     unreachable, with a retry action.
- *   - AppShell (sidebar + topbar + footer status bar) wraps every
- *     routed page via <Outlet />, so navigation between pages never
- *     triggers a full reload.
+ * On mount, fetches directly from api/Api.jsx:
+ *   - GET /api/status              (getApplicationStatus)
+ *   - GET /api/monitoring/snapshot (monitoringApi.getSnapshot)
+ *   - GET /api/security/snapshot   (securityApi.getSnapshot)
+ *   - GET /api/ai/health-score     (aiApi.getHealthScore)
+ *
+ * to gate an initial loading screen / friendly error screen before
+ * rendering the real dashboard. Once initialized, SystemStatusContext
+ * (SystemStatusProvider) takes over as the ongoing, auto-refreshing
+ * data layer for every page — App.jsx does not duplicate that polling,
+ * it only performs the one-time startup check described above.
+ *
+ * Layout: AppShell (sidebar + topbar + footer status bar) wraps every
+ * routed page via <Outlet />, so navigation between pages never
+ * triggers a full reload.
  */
 
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { useCallback, useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { FiLoader, FiWifiOff, FiRefreshCw } from "react-icons/fi";
 
 import AppShell from "./layout/appshell.jsx";
-import {
-  SystemStatusProvider,
-  useSystemStatus,
-} from "./context/systemstatuscontext.jsx";
-import { COLORS, ToastNotification } from "./components/dashboardcomponents.jsx";
+
+import { COLORS } from "./components/dashboardcomponents.jsx";
+import { getApplicationStatus, monitoringApi, securityApi, aiApi } from "./api/api.jsx";
 
 import HomePage from "./pages/homepage.jsx";
 import Monitoring from "./pages/monitoring.jsx";
@@ -36,8 +36,7 @@ import Reports from "./pages/reports.jsx";
 import Settings from "./pages/settings.jsx";
 
 // ========================================================================
-// Full-screen loading state (shown until the first backend status
-// check completes)
+// Full-screen loading state (shown while the initial backend check runs)
 // ========================================================================
 
 function AppLoadingScreen() {
@@ -63,7 +62,7 @@ function AppLoadingScreen() {
 // Full-screen "backend unavailable" state
 // ========================================================================
 
-function BackendUnavailableScreen({ onRetry }) {
+function BackendUnavailableScreen({ message, onRetry }) {
   return (
     <div
       className="flex h-screen w-full flex-col items-center justify-center gap-4 px-4 text-center"
@@ -80,8 +79,8 @@ function BackendUnavailableScreen({ onRetry }) {
           Unable to reach the Lavender Trinetra backend
         </p>
         <p className="mt-1 max-w-sm text-sm" style={{ color: COLORS.secondary }}>
-          The API server at localhost:8002 is not responding. Make sure the
-          backend is running, then try again.
+          {message ||
+            "The API server at localhost:8002 is not responding. Make sure the backend is running, then try again."}
         </p>
       </div>
       <button
@@ -98,7 +97,7 @@ function BackendUnavailableScreen({ onRetry }) {
 }
 
 // ========================================================================
-// Routed application content
+// Routed application content (rendered once startup succeeds)
 // ========================================================================
 
 function AppRoutes() {
@@ -117,35 +116,63 @@ function AppRoutes() {
 }
 
 // ========================================================================
-// App content: consumes SystemStatusContext to decide which
-// full-screen state (loading / error / routed app) to render, and
-// surfaces global errors via a single toast.
+// App content: performs the initial backend check (status, monitoring,
+// security, AI health score) and decides which full-screen state to
+// render (loading / error / routed app).
 // ========================================================================
 
 function AppContent() {
-  const { apiStatus, error, clearError, refreshAll } = useSystemStatus();
+  const [initState, setInitState] = useState("loading"); // "loading" | "ready" | "error"
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const hasCheckedOnce = Boolean(apiStatus?.lastChecked);
+  const initialize = useCallback(async () => {
+    setInitState("loading");
+    setErrorMessage(null);
 
-  if (!hasCheckedOnce) {
+    try {
+      // Core liveness check — if this fails, the backend is considered
+      // unreachable and the app cannot proceed.
+      await getApplicationStatus();
+
+      // Best-effort warm-up of the other three data sources. Any one
+      // of these being unavailable (e.g. monitoring/security/AI not
+      // yet initialized on the backend) should not block the whole
+      // dashboard from loading — SystemStatusContext will keep
+      // retrying them on its own refresh interval once mounted.
+      const results = await Promise.allSettled([
+        monitoringApi.getSnapshot(),
+        securityApi.getSnapshot(),
+        aiApi.getHealthScore(),
+      ]);
+
+      results.forEach((result, index) => {
+        if (result.status === "rejected") {
+          const label = ["monitoring snapshot", "security snapshot", "AI health score"][index];
+          // eslint-disable-next-line no-console
+          console.warn(`Initial ${label} check failed:`, result.reason?.message || result.reason);
+        }
+      });
+
+      setInitState("ready");
+    } catch (err) {
+      setErrorMessage(err?.message || "Unable to reach the backend.");
+      setInitState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  if (initState === "loading") {
     return <AppLoadingScreen />;
   }
 
-  if (!apiStatus?.online) {
-    return <BackendUnavailableScreen onRetry={() => refreshAll?.()} />;
+  if (initState === "error") {
+    return <BackendUnavailableScreen message={errorMessage} onRetry={initialize} />;
   }
 
-  return (
-    <>
-      <AppRoutes />
-      <ToastNotification
-        type="critical"
-        message={error ?? ""}
-        visible={Boolean(error)}
-        onClose={clearError}
-      />
-    </>
-  );
+  return <AppRoutes />;
 }
 
 // ========================================================================
@@ -153,11 +180,5 @@ function AppContent() {
 // ========================================================================
 
 export default function App() {
-  return (
-    <SystemStatusProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </SystemStatusProvider>
-  );
+    return <AppContent />;
 }

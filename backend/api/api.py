@@ -7,9 +7,9 @@ monitoring, cybersecurity, AI analysis, database status and overall
 application status.
 
 This module does NOT implement monitoring, security, AI or database
-business logic itself — it only reads from and orchestrates calls
-into the monitor/, cybersecurity/, ai/ and database/ layers, and
-returns their results as JSON via Pydantic response models.
+business logic itself — it only calls directly into the monitor/,
+cybersecurity/, ai/ and database/ packages' public functions/classes,
+and returns their results as JSON via Pydantic response models.
 
 Host/port configuration is read from config.py (default port: 8002).
 Do not hardcode ports anywhere else.
@@ -60,25 +60,32 @@ APP_VERSION: str = getattr(config, "APP_VERSION", "1.0.0")
 # and report availability even if a given layer isn't fully wired up)
 # ----------------------------------------------------------------------
 
-_monitor_coordinator = None
 _monitor_available = False
 try:
-    from config import get_monitoring_coordinator  # coordinator exposed by config.py
+    from monitor import (
+        get_cpu_snapshot,
+        get_memory_snapshot,
+        get_disk_snapshot,
+        get_network_snapshot,
+    )
 
-    _monitor_coordinator = get_monitoring_coordinator()
     _monitor_available = True
 except Exception as exc:  # pragma: no cover
-    logger.warning("Monitoring coordinator unavailable: %s", exc)
+    logger.warning("Monitoring layer unavailable: %s", exc)
 
-_security_coordinator = None
 _security_available = False
 try:
-    from config import get_security_coordinator  # coordinator exposed by config.py
+    from cybersecurity import (
+        run_process_security_scan,
+        run_network_security_scan,
+        run_firewall_security_check,
+        run_threat_analysis,
+        run_security_analysis,
+    )
 
-    _security_coordinator = get_security_coordinator()
     _security_available = True
 except Exception as exc:  # pragma: no cover
-    logger.warning("Security coordinator unavailable: %s", exc)
+    logger.warning("Cybersecurity layer unavailable: %s", exc)
 
 _ai_engine = None
 _ai_available = False
@@ -103,6 +110,39 @@ except Exception as exc:  # pragma: no cover
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _build_monitoring_snapshot() -> Dict[str, Any]:
+    """Builds a fresh monitoring snapshot directly from the monitor package."""
+    return {
+        "cpu": get_cpu_snapshot(),
+        "memory": get_memory_snapshot(),
+        "disk": get_disk_snapshot(),
+        "network": get_network_snapshot(),
+    }
+
+
+def _build_security_snapshot(
+    monitoring_data: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Builds a fresh cybersecurity snapshot by running each scan directly
+    from the cybersecurity package's public API and combining the
+    results into a single dictionary.
+    """
+    process_data = run_process_security_scan(monitoring_data)
+    network_data = run_network_security_scan()
+    firewall_data = run_firewall_security_check()
+    threats = run_threat_analysis(process_data, network_data, firewall_data)
+    summary = run_security_analysis(threats)
+
+    return {
+        "process": process_data,
+        "network": network_data,
+        "firewall": firewall_data,
+        "threats": threats,
+        "summary": summary,
+    }
 
 
 # ----------------------------------------------------------------------
@@ -301,34 +341,15 @@ async def get_stored_ai_records(limit: int = 100, offset: int = 0) -> List[Dict[
     tags=["System Monitoring"],
 )
 async def get_monitoring_snapshot() -> MonitoringSnapshotResponse:
-    """Returns the latest system monitoring snapshot (CPU/memory/disk/network)."""
-    if not _monitor_available or _monitor_coordinator is None:
+    """Returns a fresh system monitoring snapshot (CPU/memory/disk/network)."""
+    if not _monitor_available:
         raise HTTPException(status_code=503, detail="Monitoring layer is not available.")
     try:
-        data = _monitor_coordinator.get_latest_snapshot()
-        return MonitoringSnapshotResponse(timestamp=_now_iso(), data=data or {})
+        data = _build_monitoring_snapshot()
+        return MonitoringSnapshotResponse(timestamp=_now_iso(), data=data)
     except Exception as exc:
         logger.error("Failed to retrieve monitoring snapshot: %s", exc)
         raise HTTPException(status_code=500, detail="Failed to retrieve monitoring snapshot.")
-
-
-@app.get("/api/monitoring/history", tags=["System Monitoring"])
-async def get_monitoring_history(limit: int = 100) -> List[Dict[str, Any]]:
-    """Returns recent monitoring history, if the coordinator supports it."""
-    if not _monitor_available or _monitor_coordinator is None:
-        raise HTTPException(status_code=503, detail="Monitoring layer is not available.")
-    try:
-        get_history = getattr(_monitor_coordinator, "get_history", None)
-        if get_history is None:
-            raise HTTPException(
-                status_code=501, detail="Monitoring history is not supported by this coordinator."
-            )
-        return get_history(limit=limit) or []
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.error("Failed to retrieve monitoring history: %s", exc)
-        raise HTTPException(status_code=500, detail="Failed to retrieve monitoring history.")
 
 
 # ----------------------------------------------------------------------
@@ -342,12 +363,13 @@ async def get_monitoring_history(limit: int = 100) -> List[Dict[str, Any]]:
     tags=["Cybersecurity"],
 )
 async def get_security_snapshot() -> SecuritySnapshotResponse:
-    """Returns the latest cybersecurity snapshot (processes/network/firewall/threats)."""
-    if not _security_available or _security_coordinator is None:
+    """Returns a fresh cybersecurity snapshot (processes/network/firewall/threats)."""
+    if not _security_available:
         raise HTTPException(status_code=503, detail="Cybersecurity layer is not available.")
     try:
-        data = _security_coordinator.get_latest_snapshot()
-        return SecuritySnapshotResponse(timestamp=_now_iso(), data=data or {})
+        monitoring_data = _build_monitoring_snapshot() if _monitor_available else None
+        data = _build_security_snapshot(monitoring_data)
+        return SecuritySnapshotResponse(timestamp=_now_iso(), data=data)
     except Exception as exc:
         logger.error("Failed to retrieve security snapshot: %s", exc)
         raise HTTPException(status_code=500, detail="Failed to retrieve security snapshot.")
@@ -355,18 +377,14 @@ async def get_security_snapshot() -> SecuritySnapshotResponse:
 
 @app.get("/api/security/score", tags=["Cybersecurity"])
 async def get_security_score() -> Dict[str, Any]:
-    """Returns the current security score, if supported by the coordinator."""
-    if not _security_available or _security_coordinator is None:
+    """Returns a freshly computed overall security score."""
+    if not _security_available:
         raise HTTPException(status_code=503, detail="Cybersecurity layer is not available.")
     try:
-        get_score = getattr(_security_coordinator, "get_security_score", None)
-        if get_score is None:
-            raise HTTPException(
-                status_code=501, detail="Security score is not supported by this coordinator."
-            )
-        return {"timestamp": _now_iso(), "security_score": get_score()}
-    except HTTPException:
-        raise
+        monitoring_data = _build_monitoring_snapshot() if _monitor_available else None
+        data = _build_security_snapshot(monitoring_data)
+        security_score = data.get("summary", {}).get("security_score")
+        return {"timestamp": _now_iso(), "security_score": security_score}
     except Exception as exc:
         logger.error("Failed to retrieve security score: %s", exc)
         raise HTTPException(status_code=500, detail="Failed to retrieve security score.")
@@ -385,8 +403,8 @@ async def get_security_score() -> Dict[str, Any]:
 async def run_ai_analysis(request: AIAnalysisRequest) -> AIAnalysisResponse:
     """
     Runs a full AI analysis pass. If monitoring/security data is not
-    supplied in the request body, the latest available snapshots from
-    the monitoring/security layers are used instead.
+    supplied in the request body, fresh snapshots are obtained
+    directly from the monitor/ and cybersecurity/ packages first.
     """
     if not _ai_available or _ai_engine is None:
         raise HTTPException(status_code=503, detail="AI engine is not available.")
@@ -395,10 +413,10 @@ async def run_ai_analysis(request: AIAnalysisRequest) -> AIAnalysisResponse:
     security_data = request.security_data
 
     try:
-        if monitoring_data is None and _monitor_available and _monitor_coordinator is not None:
-            monitoring_data = _monitor_coordinator.get_latest_snapshot()
-        if security_data is None and _security_available and _security_coordinator is not None:
-            security_data = _security_coordinator.get_latest_snapshot()
+        if monitoring_data is None and _monitor_available:
+            monitoring_data = _build_monitoring_snapshot()
+        if security_data is None and _security_available:
+            security_data = _build_security_snapshot(monitoring_data)
 
         result = _ai_engine.analyze_dict(monitoring_data, security_data)
         return AIAnalysisResponse(timestamp=_now_iso(), data=result)
@@ -415,15 +433,9 @@ async def get_ai_health_score() -> Dict[str, Any]:
     if not _ai_available or _ai_engine is None:
         raise HTTPException(status_code=503, detail="AI engine is not available.")
     try:
-        monitoring_data = (
-            _monitor_coordinator.get_latest_snapshot()
-            if _monitor_available and _monitor_coordinator is not None
-            else {}
-        )
+        monitoring_data = _build_monitoring_snapshot() if _monitor_available else {}
         security_data = (
-            _security_coordinator.get_latest_snapshot()
-            if _security_available and _security_coordinator is not None
-            else {}
+            _build_security_snapshot(monitoring_data) if _security_available else {}
         )
         result = _ai_engine.analyze_dict(monitoring_data, security_data)
         return {
