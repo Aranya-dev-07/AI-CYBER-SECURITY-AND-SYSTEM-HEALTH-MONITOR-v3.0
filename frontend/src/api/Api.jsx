@@ -124,7 +124,7 @@ async function request(requestConfig) {
  * @returns {Promise<Object>}
  */
 export async function getApplicationStatus() {
-  return request({ method: "GET", url: "/api/status" });
+  return request({ method: "GET", url: "/status" });
 }
 
 /**
@@ -132,7 +132,7 @@ export async function getApplicationStatus() {
  * @returns {Promise<{ status: string, timestamp: string }>}
  */
 export async function getHealthCheck() {
-  return request({ method: "GET", url: "/api/health" });
+  return request({ method: "GET", url: "/health" });
 }
 
 // ========================================================================
@@ -144,7 +144,7 @@ export const databaseApi = {
    * Fetches database connectivity status.
    * @returns {Promise<Object>}
    */
-  getStatus: async () => request({ method: "GET", url: "/api/database/status" }),
+  getStatus: async () => request({ method: "GET", url: "/status" }),
 
   /**
    * Fetches persisted monitoring records.
@@ -152,7 +152,7 @@ export const databaseApi = {
    * @returns {Promise<Array<Object>>}
    */
   getMonitoringRecords: async (params = {}) =>
-    request({ method: "GET", url: "/api/database/monitoring", params }),
+    request({ method: "GET", url: "/monitoring", params }),
 
   /**
    * Fetches persisted security records.
@@ -160,7 +160,7 @@ export const databaseApi = {
    * @returns {Promise<Array<Object>>}
    */
   getSecurityRecords: async (params = {}) =>
-    request({ method: "GET", url: "/api/database/security", params }),
+    request({ method: "GET", url: "/security", params }),
 
   /**
    * Fetches persisted AI analysis records.
@@ -168,7 +168,7 @@ export const databaseApi = {
    * @returns {Promise<Array<Object>>}
    */
   getAIRecords: async (params = {}) =>
-    request({ method: "GET", url: "/api/database/ai", params }),
+    request({ method: "GET", url: "/ai", params }),
 };
 
 // ========================================================================
@@ -180,7 +180,7 @@ export const monitoringApi = {
    * Fetches the latest system monitoring snapshot (CPU/memory/disk/network).
    * @returns {Promise<{ timestamp: string, data: Object }>}
    */
-  getSnapshot: async () => request({ method: "GET", url: "/api/monitoring/snapshot" }),
+  getSnapshot: async () => request({ method: "GET", url: "/snapshot" }),
 
   /**
    * Fetches recent monitoring history.
@@ -188,7 +188,7 @@ export const monitoringApi = {
    * @returns {Promise<Array<Object>>}
    */
   getHistory: async (params = { limit: 100 }) =>
-    request({ method: "GET", url: "/api/monitoring/history", params }),
+    request({ method: "GET", url: "/history", params }),
 };
 
 // ========================================================================
@@ -200,13 +200,13 @@ export const securityApi = {
    * Fetches the latest cybersecurity snapshot (processes/network/firewall/threats).
    * @returns {Promise<{ timestamp: string, data: Object }>}
    */
-  getSnapshot: async () => request({ method: "GET", url: "/api/security/snapshot" }),
+  getSnapshot: async () => request({ method: "GET", url: "/snapshot" }),
 
   /**
    * Fetches the current security score.
    * @returns {Promise<{ timestamp: string, security_score: number }>}
    */
-  getScore: async () => request({ method: "GET", url: "/api/security/score" }),
+  getScore: async () => request({ method: "GET", url: "/score" }),
 };
 
 // ========================================================================
@@ -221,13 +221,13 @@ export const aiApi = {
    * @returns {Promise<{ timestamp: string, data: Object }>}
    */
   analyze: async (payload = {}) =>
-    request({ method: "POST", url: "/api/ai/analyze", data: payload }),
+    request({ method: "POST", url: "/analyze", data: payload }),
 
   /**
    * Fetches only the latest AI health score.
    * @returns {Promise<{ timestamp: string, health_score: number|null }>}
    */
-  getHealthScore: async () => request({ method: "GET", url: "/api/ai/health-score" }),
+  getHealthScore: async () => request({ method: "GET", url: "/health-score" }),
 };
 
 // ========================================================================
@@ -241,7 +241,7 @@ export const reportsApi = {
    * @returns {Promise<Array<Object>>}
    */
   getTestRuns: async (params = {}) =>
-    request({ method: "GET", url: "/api/reports/test-runs", params }),
+    request({ method: "GET", url: "/test-runs", params }),
 
   /**
    * Fetches historical generated reports.
@@ -249,14 +249,14 @@ export const reportsApi = {
    * @returns {Promise<Array<Object>>}
    */
   getHistory: async (params = {}) =>
-    request({ method: "GET", url: "/api/reports/history", params }),
+    request({ method: "GET", url: "/history", params }),
 
   /**
    * Fetches database statistics used on the Reports page.
    * @returns {Promise<Object>}
    */
   getDatabaseStatistics: async () =>
-    request({ method: "GET", url: "/api/reports/database-statistics" }),
+    request({ method: "GET", url: "/database-statistics" }),
 
   /**
    * Requests export of a report in the given format.
@@ -282,7 +282,7 @@ export const settingsApi = {
    * Fetches current backend configuration/settings.
    * @returns {Promise<Object>}
    */
-  getSettings: async () => request({ method: "GET", url: "/api/settings" }),
+  getSettings: async () => request({ method: "GET", url: "/settings" }),
 
   /**
    * Updates backend configuration/settings.
@@ -290,7 +290,7 @@ export const settingsApi = {
    * @returns {Promise<Object>}
    */
   updateSettings: async (settingsPayload) =>
-    request({ method: "PUT", url: "/api/settings", data: settingsPayload }),
+    request({ method: "PUT", url: "/settings", data: settingsPayload }),
 
   /**
    * Updates only the monitoring interval.
@@ -310,7 +310,7 @@ export const settingsApi = {
    * @returns {Promise<Object>}
    */
   updateThresholds: async (thresholds) =>
-    request({ method: "PATCH", url: "/api/settings/thresholds", data: thresholds }),
+    request({ method: "PATCH", url: "/thresholds", data: thresholds }),
 };
 
 // ========================================================================

@@ -34,7 +34,7 @@ import Monitoring from "./pages/monitoring.jsx";
 import TrinetraAI from "./pages/trinetraai.jsx";
 import Reports from "./pages/reports.jsx";
 import Settings from "./pages/settings.jsx";
-
+import Cybersecurity from "./pages/cybersecurity.jsx";
 // ========================================================================
 // Full-screen loading state (shown while the initial backend check runs)
 // ========================================================================
