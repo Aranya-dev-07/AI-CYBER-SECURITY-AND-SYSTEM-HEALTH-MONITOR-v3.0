@@ -144,7 +144,8 @@ export const databaseApi = {
    * Fetches database connectivity status.
    * @returns {Promise<Object>}
    */
-  getStatus: async () => request({ method: "GET", url: "/status" }),
+  getStatus: async () =>
+    request({ method: "GET", url: "/database/status" }),
 
   /**
    * Fetches persisted monitoring records.
@@ -152,7 +153,11 @@ export const databaseApi = {
    * @returns {Promise<Array<Object>>}
    */
   getMonitoringRecords: async (params = {}) =>
-    request({ method: "GET", url: "/monitoring", params }),
+    request({
+        method: "GET",
+        url: "/database/monitoring",
+        params,
+    }),
 
   /**
    * Fetches persisted security records.
@@ -160,15 +165,23 @@ export const databaseApi = {
    * @returns {Promise<Array<Object>>}
    */
   getSecurityRecords: async (params = {}) =>
-    request({ method: "GET", url: "/security", params }),
+    request({
+        method: "GET",
+        url: "/database/security",
+        params,
+    }),
 
   /**
    * Fetches persisted AI analysis records.
    * @param {{ limit?: number, offset?: number }} [params]
    * @returns {Promise<Array<Object>>}
    */
-  getAIRecords: async (params = {}) =>
-    request({ method: "GET", url: "/ai", params }),
+ getAIRecords: async (params = {}) =>
+    request({
+        method: "GET",
+        url: "/database/ai",
+        params,
+    }),
 };
 
 // ========================================================================
@@ -180,15 +193,14 @@ export const monitoringApi = {
    * Fetches the latest system monitoring snapshot (CPU/memory/disk/network).
    * @returns {Promise<{ timestamp: string, data: Object }>}
    */
-  getSnapshot: async () => request({ method: "GET", url: "/snapshot" }),
+  getSnapshot: async () =>
+    request({
+      method: "GET",
+      url: "/monitoring/snapshot",
+    }),
 
-  /**
-   * Fetches recent monitoring history.
-   * @param {{ limit?: number }} [params]
-   * @returns {Promise<Array<Object>>}
-   */
-  getHistory: async (params = { limit: 100 }) =>
-    request({ method: "GET", url: "/history", params }),
+  // getHistory() removed — the backend does not currently implement
+  // a monitoring history endpoint.
 };
 
 // ========================================================================
@@ -200,13 +212,13 @@ export const securityApi = {
    * Fetches the latest cybersecurity snapshot (processes/network/firewall/threats).
    * @returns {Promise<{ timestamp: string, data: Object }>}
    */
-  getSnapshot: async () => request({ method: "GET", url: "/snapshot" }),
+  getSnapshot: async () => request({ method: "GET", url: "/security/snapshot" }),
 
   /**
    * Fetches the current security score.
    * @returns {Promise<{ timestamp: string, security_score: number }>}
    */
-  getScore: async () => request({ method: "GET", url: "/score" }),
+  getScore: async () => request({ method: "GET", url: "/security/score" }),
 };
 
 // ========================================================================
@@ -221,111 +233,43 @@ export const aiApi = {
    * @returns {Promise<{ timestamp: string, data: Object }>}
    */
   analyze: async (payload = {}) =>
-    request({ method: "POST", url: "/analyze", data: payload }),
+    request({ method: "POST", url: "/ai/analyze", data: payload }),
 
   /**
    * Fetches only the latest AI health score.
    * @returns {Promise<{ timestamp: string, health_score: number|null }>}
    */
-  getHealthScore: async () => request({ method: "GET", url: "/health-score" }),
+  getHealthScore: async () => request({ method: "GET", url: "/ai/health-score" }),
 };
 
 // ========================================================================
 // Reports
 // ========================================================================
-
-export const reportsApi = {
-  /**
-   * Fetches the list of past test runs / monitoring sessions.
-   * @param {{ limit?: number, offset?: number }} [params]
-   * @returns {Promise<Array<Object>>}
-   */
-  getTestRuns: async (params = {}) =>
-    request({ method: "GET", url: "/test-runs", params }),
-
-  /**
-   * Fetches historical generated reports.
-   * @param {{ limit?: number, offset?: number }} [params]
-   * @returns {Promise<Array<Object>>}
-   */
-  getHistory: async (params = {}) =>
-    request({ method: "GET", url: "/history", params }),
-
-  /**
-   * Fetches database statistics used on the Reports page.
-   * @returns {Promise<Object>}
-   */
-  getDatabaseStatistics: async () =>
-    request({ method: "GET", url: "/database-statistics" }),
-
-  /**
-   * Requests export of a report in the given format.
-   * @param {"csv"|"pdf"} format
-   * @param {{ runId?: string|number }} [params]
-   * @returns {Promise<Blob>}
-   */
-  exportReport: async (format, params = {}) =>
-    request({
-      method: "GET",
-      url: `/api/reports/export/${format}`,
-      params,
-      responseType: "blob",
-    }),
-};
+//
+// reportsApi has been removed. The backend does not currently
+// implement /test-runs, /history, /database-statistics or
+// /reports/export/{format}. Re-add this export once those endpoints
+// exist on the backend.
 
 // ========================================================================
 // Settings
 // ========================================================================
-
-export const settingsApi = {
-  /**
-   * Fetches current backend configuration/settings.
-   * @returns {Promise<Object>}
-   */
-  getSettings: async () => request({ method: "GET", url: "/settings" }),
-
-  /**
-   * Updates backend configuration/settings.
-   * @param {Object} settingsPayload
-   * @returns {Promise<Object>}
-   */
-  updateSettings: async (settingsPayload) =>
-    request({ method: "PUT", url: "/settings", data: settingsPayload }),
-
-  /**
-   * Updates only the monitoring interval.
-   * @param {number} intervalSeconds
-   * @returns {Promise<Object>}
-   */
-  updateMonitoringInterval: async (intervalSeconds) =>
-    request({
-      method: "PATCH",
-      url: "/api/settings/monitoring-interval",
-      data: { interval_seconds: intervalSeconds },
-    }),
-
-  /**
-   * Updates system resource alert thresholds.
-   * @param {{ cpu_percent?: number, memory_percent?: number, disk_percent?: number, network_sent_mb?: number, network_received_mb?: number }} thresholds
-   * @returns {Promise<Object>}
-   */
-  updateThresholds: async (thresholds) =>
-    request({ method: "PATCH", url: "/thresholds", data: thresholds }),
-};
+//
+// settingsApi has been removed. The backend does not currently
+// implement /settings, /settings/monitoring-interval or /thresholds.
+// Re-add this export once those endpoints exist on the backend.
 
 // ========================================================================
 // Default export (grouped API surface)
 // ========================================================================
 
 const api = {
-  getApplicationStatus,
-  getHealthCheck,
-  database: databaseApi,
-  monitoring: monitoringApi,
-  security: securityApi,
-  ai: aiApi,
-  reports: reportsApi,
-  settings: settingsApi,
+    getApplicationStatus,
+    getHealthCheck,
+    database: databaseApi,
+    monitoring: monitoringApi,
+    security: securityApi,
+    ai: aiApi,
 };
 
 export default api;

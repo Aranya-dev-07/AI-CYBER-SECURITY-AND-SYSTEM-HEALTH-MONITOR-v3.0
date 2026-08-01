@@ -35,6 +35,8 @@ import TrinetraAI from "./pages/trinetraai.jsx";
 import Reports from "./pages/reports.jsx";
 import Settings from "./pages/settings.jsx";
 import Cybersecurity from "./pages/cybersecurity.jsx";
+import { SystemStatusProvider } from "./context/systemstatuscontext.jsx";
+
 // ========================================================================
 // Full-screen loading state (shown while the initial backend check runs)
 // ========================================================================
@@ -107,6 +109,7 @@ function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="monitoring" element={<Monitoring />} />
         <Route path="trinetra-ai" element={<TrinetraAI />} />
+        <Route path="cybersecurity" element={<Cybersecurity />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -180,5 +183,9 @@ function AppContent() {
 // ========================================================================
 
 export default function App() {
-    return <AppContent />;
+  return (
+    <SystemStatusProvider>
+      <AppContent />
+    </SystemStatusProvider>
+  );
 }

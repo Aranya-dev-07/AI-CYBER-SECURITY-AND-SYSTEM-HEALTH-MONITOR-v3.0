@@ -13,7 +13,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiSearch, FiFilter, FiClock, FiCheckCircle, FiXCircle, FiPlay } from "react-icons/fi";
 
-import { reportsApi } from "../api/api.jsx";
+import { databaseApi } from "../api/api.jsx";
 import { COLORS, StatusBadge } from "../components/dashboardcomponents.jsx";
 import {
   SectionHeader,
